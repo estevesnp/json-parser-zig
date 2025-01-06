@@ -1,7 +1,7 @@
 const std = @import("std");
 const Lexer = @This();
 
-const Token = union(enum) {
+pub const Token = union(enum) {
     l_brace: void,
     r_brace: void,
     l_brack: void,
