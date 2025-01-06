@@ -1,5 +1,13 @@
 const std = @import("std");
+const Parser = @import("Parser.zig");
 
 pub fn main() !void {
-    return error.NotImplemented;
+    const input =
+        \\"foo"
+    ;
+
+    var parser = Parser.init(input);
+
+    const res = try parser.parse();
+    std.debug.print("{any}\n", .{res});
 }
