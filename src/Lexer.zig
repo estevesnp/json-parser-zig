@@ -123,6 +123,7 @@ fn parseNumber(self: *Lexer) !f64 {
             '0'...'9' => {},
             '.' => {
                 if (!in_fraction) {
+                    if (in_exponent) return error.BadFraction;
                     in_fraction = true;
                 } else {
                     return error.RepeatedFraction;

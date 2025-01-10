@@ -133,7 +133,11 @@ fn parseObject(self: *Parser) anyerror!Object {
 
         const value = try self.parseValue() orelse return error.UnclosedBrace;
 
-        try obj.put(allocator, key, value);
+        const gop = try obj.getOrPut(allocator, key);
+        if (gop.found_existing) {
+            return error.RepeatedKeys;
+        }
+        gop.value_ptr.* = value;
 
         const next_tok = self.next_token orelse return error.UnclosedBrace;
 
