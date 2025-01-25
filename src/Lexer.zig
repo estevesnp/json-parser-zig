@@ -16,6 +16,21 @@ pub const Token = union(enum) {
     null: void,
 };
 
+pub const Error = error{
+    UnexpectedCharacter,
+    ExpectedQuoteMark,
+    InvalidControl,
+    BareControl,
+    InvalidKeyword,
+} || NumberParseError;
+
+pub const NumberParseError = error{
+    BadFraction,
+    RepeatedFraction,
+    RepeatedExponent,
+    RepeatedExponentSign,
+} || std.fmt.ParseFloatError;
+
 input: []const u8,
 pos: usize = 0,
 read_pos: usize = 0,
@@ -51,7 +66,7 @@ fn skipWhitespaces(self: *Lexer) void {
     }
 }
 
-pub fn nextToken(self: *Lexer) !?Token {
+pub fn nextToken(self: *Lexer) Error!?Token {
     self.skipWhitespaces();
     defer self.readChar();
 
@@ -71,12 +86,12 @@ pub fn nextToken(self: *Lexer) !?Token {
 
         0 => null,
 
-        else => error.UnexpectedToken,
+        else => Error.UnexpectedCharacter,
     };
 }
 
-fn parseString(self: *Lexer) ![]const u8 {
-    if (self.pos >= self.input.len - 1) return error.IncompleteString;
+fn parseString(self: *Lexer) Error![]const u8 {
+    if (self.pos >= self.input.len - 1) return Error.ExpectedQuoteMark;
 
     self.readChar();
 
@@ -98,10 +113,10 @@ fn parseString(self: *Lexer) ![]const u8 {
                     'r',
                     't',
                     => {},
-                    else => return error.InvalidControl,
+                    else => return Error.InvalidControl,
                 }
             },
-            else => if (std.ascii.isControl(self.ch)) return error.BareControl,
+            else => if (std.ascii.isControl(self.ch)) return Error.BareControl,
         }
     }
 
@@ -110,7 +125,7 @@ fn parseString(self: *Lexer) ![]const u8 {
     return self.input[start_pos..end_pos];
 }
 
-fn parseNumber(self: *Lexer) !f64 {
+fn parseNumber(self: *Lexer) NumberParseError!f64 {
     const start_pos = self.pos;
     if (self.ch == '-') self.readChar();
 
@@ -123,24 +138,24 @@ fn parseNumber(self: *Lexer) !f64 {
             '0'...'9' => {},
             '.' => {
                 if (!in_fraction) {
-                    if (in_exponent) return error.BadFraction;
+                    if (in_exponent) return NumberParseError.BadFraction;
                     in_fraction = true;
                 } else {
-                    return error.RepeatedFraction;
+                    return NumberParseError.RepeatedFraction;
                 }
             },
             'e', 'E' => {
                 if (!in_exponent) {
                     in_exponent = true;
                 } else {
-                    return error.RepeatedExponent;
+                    return NumberParseError.RepeatedExponent;
                 }
             },
             '+', '-' => {
                 if (!signed_exponent) {
                     signed_exponent = true;
                 } else {
-                    return error.RepeatedExponentSign;
+                    return NumberParseError.RepeatedExponentSign;
                 }
             },
             else => break :blk,
@@ -151,24 +166,24 @@ fn parseNumber(self: *Lexer) !f64 {
     return try std.fmt.parseFloat(f64, self.input[start_pos..end_pos]);
 }
 
-fn parseTrue(self: *Lexer) !Token {
-    try self.parseWord("true");
+fn parseTrue(self: *Lexer) Error!Token {
+    try self.parseKeyword("true");
     return .{ .true = {} };
 }
 
-fn parseFalse(self: *Lexer) !Token {
-    try self.parseWord("false");
+fn parseFalse(self: *Lexer) Error!Token {
+    try self.parseKeyword("false");
     return .{ .false = {} };
 }
 
-fn parseNull(self: *Lexer) !Token {
-    try self.parseWord("null");
+fn parseNull(self: *Lexer) Error!Token {
+    try self.parseKeyword("null");
     return .{ .null = {} };
 }
 
-fn parseWord(self: *Lexer, word: []const u8) !void {
+fn parseKeyword(self: *Lexer, word: []const u8) Error!void {
     if (self.input.len - self.pos < word.len) {
-        return error.UnfinishedWord;
+        return Error.InvalidKeyword;
     }
 
     const start_pos = self.pos;
@@ -176,11 +191,11 @@ fn parseWord(self: *Lexer, word: []const u8) !void {
     for (0..word.len - 1) |_| self.readChar();
 
     if (!std.mem.eql(u8, self.input[start_pos..][0..word.len], word)) {
-        return error.UnexpectedToken;
+        return Error.InvalidKeyword;
     }
 
     if (self.peekChar()) |ch| {
-        if (std.ascii.isAlphabetic(ch)) return error.ExtendedWord;
+        if (std.ascii.isAlphabetic(ch)) return Error.InvalidKeyword;
     }
 }
 
