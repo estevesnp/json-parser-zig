@@ -1,56 +1,40 @@
 const std = @import("std");
+const assert = std.debug.assert;
+
 const Parser = @import("Parser.zig");
 const deserialize = @import("deserializer.zig");
 
 const Foo = struct {
-    bar: u32,
+    bar: Bar,
+    baz: []const bool,
 };
 
-const Wrap = struct {
-    foo: []Foo,
-};
-
-const Stringer = struct {
-    foo: []const u8,
-    bar: []u8,
+const Bar = struct {
+    foobar: u32,
+    foobaz: f32,
 };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    const allocator = gpa.allocator();
+    const input =
+        \\  {
+        \\    "bar": {
+        \\      "foobar": 42,
+        \\      "foobaz": 22.7
+        \\    },
+        \\    "baz": [
+        \\      true,
+        \\      false,
+        \\      false
+        \\    ]
+        \\  }
+    ;
 
-    {
-        const input =
-            \\[{"bar": 22},{"bar": 12},{"bar": 2}]
-        ;
+    var res = try deserialize.deserialize(Foo, gpa.allocator(), input);
+    defer res.deinit();
 
-        var res = try deserialize.deserialize([]Foo, allocator, input);
-        defer res.deinit();
-
-        std.debug.print("{any}\n", .{res.value});
-    }
-
-    {
-        const input =
-            \\[ true ]
-        ;
-
-        var res = try deserialize.deserialize([]bool, allocator, input);
-        defer res.deinit();
-
-        std.debug.print("{any}\n", .{res.value});
-    }
-
-    {
-        const input =
-            \\{ "foo": "um foo", "bar": "um bar" }
-        ;
-
-        var res = try deserialize.deserialize(Stringer, allocator, input);
-        defer res.deinit();
-
-        std.debug.print("{s} | {s} \n", .{ res.value.foo, res.value.bar });
-    }
+    assert(std.meta.eql(res.value.bar, .{ .foobar = 42, .foobaz = 22.7 }));
+    assert(std.mem.eql(bool, res.value.baz, &.{ true, false, false }));
 }
