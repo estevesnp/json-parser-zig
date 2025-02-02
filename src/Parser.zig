@@ -4,8 +4,8 @@ const Token = Lexer.Token;
 
 const Parser = @This();
 
-const Object = std.StringHashMapUnmanaged(Value);
-const Array = std.ArrayListUnmanaged(Value);
+pub const Object = std.StringHashMapUnmanaged(Value);
+pub const Array = std.ArrayListUnmanaged(Value);
 
 pub const Error = error{
     UnexpectedToken,
@@ -22,7 +22,7 @@ cur_token: ?Token = null,
 next_token: ?Token = null,
 arena: std.heap.ArenaAllocator,
 
-const Value = union(enum) {
+pub const Value = union(enum) {
     object: Object,
     array: Array,
     string: []const u8,
