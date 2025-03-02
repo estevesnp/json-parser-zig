@@ -114,9 +114,10 @@ pub fn parse(self: *Parser) Error!?Value {
 
 fn parseValue(self: *Parser) Error!?Value {
     const tok = self.cur_token orelse return null;
+    const allocator = self.arena.allocator();
 
     return switch (tok) {
-        .string => |s| Value{ .string = s },
+        .string => |s| Value{ .string = try allocator.dupe(u8, s) },
         .number => |n| Value{ .number = n },
         .true => Value{ .true = {} },
         .false => Value{ .false = {} },
