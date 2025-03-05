@@ -27,33 +27,33 @@ pub fn serialize(allocator: std.mem.Allocator, value: anytype) ![]u8 {
 fn serializeValue(writer: anytype, value: anytype) !void {
     const val_type = @TypeOf(value);
     switch (@typeInfo(val_type)) {
-        .Bool => try writer.print("{}", .{value}),
+        .bool => try writer.print("{}", .{value}),
 
-        .Int,
-        .Float,
-        .ComptimeInt,
-        .ComptimeFloat,
+        .int,
+        .float,
+        .comptime_int,
+        .comptime_float,
         => try writer.print("{d}", .{value}), // TODO - check if we can skip {d}
 
-        .Type => try writer.print(string_fmt, .{@typeName(val_type)}),
-        .Enum => try writer.print(string_fmt, .{@tagName(value)}),
+        .type => try writer.print(string_fmt, .{@typeName(val_type)}),
+        .@"enum" => try writer.print(string_fmt, .{@tagName(value)}),
 
-        .Null => try writer.writeAll("null"),
+        .null => try writer.writeAll("null"),
 
-        .Struct => |s| {
+        .@"struct" => |s| {
             if (s.is_tuple) {
                 try serializeTuple(writer, value);
             } else {
                 try serializeObject(writer, value);
             }
         },
-        .Pointer => |p| switch (p.size) {
-            .Slice => switch (p.child) {
+        .pointer => |p| switch (p.size) {
+            .slice => switch (p.child) {
                 u8 => try writer.print(string_fmt, .{value}),
                 else => try serializeArray(writer, value),
             },
-            .One => switch (@typeInfo(p.child)) {
-                .Array => |a| try serializeValue(writer, @as([]const a.child, value)),
+            .one => switch (@typeInfo(p.child)) {
+                .array => |a| try serializeValue(writer, @as([]const a.child, value)),
                 else => try serializeValue(writer, value.*),
             },
             else => return error.UnsupportedType,
@@ -64,7 +64,7 @@ fn serializeValue(writer: anytype, value: anytype) !void {
 }
 
 fn serializeObject(writer: anytype, obj: anytype) !void {
-    const fields = @typeInfo(@TypeOf(obj)).Struct.fields;
+    const fields = @typeInfo(@TypeOf(obj)).@"struct".fields;
 
     try writer.writeByte('{');
 
@@ -114,34 +114,34 @@ pub fn deserialize(T: type, allocator: std.mem.Allocator, input: []const u8) !Re
 
 fn deserializeValue(T: type, allocator: std.mem.Allocator, value: Parser.Value) !T {
     switch (@typeInfo(T)) {
-        .Bool => {
+        .bool => {
             return switch (value) {
                 .true => true,
                 .false => false,
                 else => error.TypeMismatch,
             };
         },
-        .Int => {
+        .int => {
             return switch (value) {
                 .number => |n| @as(T, @intFromFloat(n)),
                 else => error.TypeMismatch,
             };
         },
-        .Float => {
+        .float => {
             return switch (value) {
                 .number => |n| @as(T, @floatCast(n)),
                 else => error.TypeMismatch,
             };
         },
-        .Struct => {
+        .@"struct" => {
             return switch (value) {
                 .object => |o| deserializeObject(T, allocator, o),
                 else => error.TypeMismatch,
             };
         },
-        .Pointer => |p| {
+        .pointer => |p| {
             return switch (p.size) {
-                .Slice => switch (value) {
+                .slice => switch (value) {
                     .array => |a| try deserializeArray(T, allocator, a),
                     .string => |s| switch (p.child) {
                         u8 => try allocator.dupe(u8, s),
@@ -157,7 +157,7 @@ fn deserializeValue(T: type, allocator: std.mem.Allocator, value: Parser.Value) 
 }
 
 fn deserializeObject(T: type, allocator: std.mem.Allocator, obj: Parser.Object) !T {
-    const info = @typeInfo(T).Struct;
+    const info = @typeInfo(T).@"struct";
 
     var res: T = undefined;
 
@@ -170,12 +170,12 @@ fn deserializeObject(T: type, allocator: std.mem.Allocator, obj: Parser.Object) 
 }
 
 fn deserializeArray(T: type, allocator: std.mem.Allocator, arr: Parser.Array) !T {
-    const Child = @typeInfo(T).Pointer.child;
+    const child = @typeInfo(T).pointer.child;
 
-    var list = std.ArrayList(Child).init(allocator);
+    var list = std.ArrayList(child).init(allocator);
 
     for (arr.items) |elem| {
-        const v = try deserializeValue(Child, allocator, elem);
+        const v = try deserializeValue(child, allocator, elem);
         try list.append(v);
     }
 

@@ -1,7 +1,9 @@
 .{
-    .name = "json-parser-zig",
+    .name = .json_parser_zig,
 
     .version = "0.0.0",
+
+    .fingerprint = 0x9f248316cd69bad0,
 
     .dependencies = .{},
 
