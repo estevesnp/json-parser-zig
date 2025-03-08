@@ -16,13 +16,13 @@ pub fn Result(T: type) type {
 }
 
 pub fn serialize(allocator: std.mem.Allocator, value: anytype) ![]u8 {
-    var buf_list = std.ArrayList(u8).init(allocator);
+    var buf_list: std.ArrayListUnmanaged(u8) = .empty;
 
-    const writer = buf_list.writer();
+    const writer = buf_list.writer(allocator);
 
     try serializeValue(writer, value);
 
-    return buf_list.toOwnedSlice();
+    return buf_list.toOwnedSlice(allocator);
 }
 
 fn serializeValue(writer: anytype, value: anytype) !void {
@@ -171,13 +171,13 @@ fn deserializeObject(T: type, allocator: std.mem.Allocator, obj: Parser.Object) 
 }
 
 fn deserializeArray(T: type, allocator: std.mem.Allocator, arr: Parser.Array) !T {
-    const child = @typeInfo(T).pointer.child;
+    const Child = @typeInfo(T).pointer.child;
 
-    var list = std.ArrayList(child).init(allocator);
+    var list: std.ArrayListUnmanaged(Child) = .empty;
 
     for (arr.items) |elem| {
-        const v = try deserializeValue(child, allocator, elem);
-        try list.append(v);
+        const v = try deserializeValue(Child, allocator, elem);
+        try list.append(allocator, v);
     }
 
     return list.items;
