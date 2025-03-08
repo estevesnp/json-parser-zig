@@ -130,7 +130,7 @@ fn parseValue(self: *Parser) Error!?Value {
 
 fn parseObject(self: *Parser) Error!Object {
     const allocator = self.arena.allocator();
-    var obj: Object = .{};
+    var obj: Object = .empty;
 
     try self.readToken();
 
@@ -170,7 +170,7 @@ fn parseObject(self: *Parser) Error!Object {
 
 fn parseArray(self: *Parser) Error!Array {
     const allocator = self.arena.allocator();
-    var arr: Array = .{};
+    var arr: Array = .empty;
 
     try self.readToken();
     const tok = self.cur_token orelse return Error.UnclosedArray;

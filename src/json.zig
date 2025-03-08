@@ -1,4 +1,5 @@
 const std = @import("std");
+const testing = std.testing;
 const Parser = @import("Parser.zig");
 
 const string_fmt = "\"{s}\"";
@@ -180,4 +181,45 @@ fn deserializeArray(T: type, allocator: std.mem.Allocator, arr: Parser.Array) !T
     }
 
     return list.items;
+}
+
+test "serialize, deserialize" {
+    const Bar = struct {
+        foobar: f32,
+        foobaz: bool,
+    };
+
+    const Foo = struct {
+        bar: Bar,
+        baz: [][]const u8,
+    };
+
+    const input =
+        \\  {
+        \\    "bar": {
+        \\      "foobar": 42.27,
+        \\      "foobaz": false
+        \\    },
+        \\    "baz": [
+        \\      "foo",
+        \\      "bar",
+        \\      "baz"
+        \\    ]
+        \\  }
+    ;
+
+    var res = try deserialize(Foo, testing.allocator, input);
+    defer res.deinit();
+
+    try testing.expectEqualDeep(res.value.bar, Bar{ .foobar = 42.27, .foobaz = false });
+    try testing.expectEqualStrings(res.value.baz[0], "foo");
+    try testing.expectEqualStrings(res.value.baz[1], "bar");
+    try testing.expectEqualStrings(res.value.baz[2], "baz");
+
+    const serialized = try serialize(testing.allocator, res.value);
+    defer testing.allocator.free(serialized);
+
+    try testing.expectEqualStrings(serialized,
+        \\{"bar":{"foobar":42.27,"foobaz":false},"baz":["foo","bar","baz"]}
+    );
 }
