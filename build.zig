@@ -10,32 +10,25 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const lexer_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/Lexer.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const parser_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/Parser.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const json_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/json.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lexer_unit_tests = b.addRunArtifact(lexer_unit_tests);
-    const run_parser_unit_tests = b.addRunArtifact(parser_unit_tests);
-    const run_json_unit_tests = b.addRunArtifact(json_unit_tests);
+    const unit_test_files = [_][]const u8{
+        "src/Lexer.zig",
+        "src/Parser.zig",
+        "src/json.zig",
+    };
 
     const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lexer_unit_tests.step);
-    test_step.dependOn(&run_parser_unit_tests.step);
-    test_step.dependOn(&run_json_unit_tests.step);
+
+    for (unit_test_files) |test_file| {
+        const unit_test = b.addTest(.{
+            .root_source_file = b.path(test_file),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        const run_test = b.addRunArtifact(unit_test);
+
+        test_step.dependOn(&run_test.step);
+    }
 
     const root_test = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),
@@ -45,6 +38,6 @@ pub fn build(b: *std.Build) void {
 
     const run_root_test = b.addRunArtifact(root_test);
 
-    const check_step = b.step("check", "Check application compiles");
+    const check_step = b.step("check", "Check project compiles");
     check_step.dependOn(&run_root_test.step);
 }
