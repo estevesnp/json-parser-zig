@@ -57,10 +57,9 @@ fn serializeValue(writer: anytype, value: anytype) !void {
                 .array => |a| try serializeValue(writer, @as([]const a.child, value)),
                 else => try serializeValue(writer, value.*),
             },
-            else => return error.UnsupportedType,
+            else => @compileError("can't serialize type " ++ @typeName(@TypeOf(value))),
         },
-        else => return error.UnsupportedType,
-        //else => @compileError("can't compile type " ++ @typeName(@TypeOf(value))),
+        else => @compileError("can't serialize type " ++ @typeName(@TypeOf(value))),
     }
 }
 
@@ -156,10 +155,10 @@ fn deserializeValue(T: type, allocator: std.mem.Allocator, value: Parser.Value) 
                     },
                     else => error.TypeMismatch,
                 },
-                else => error.UnsupportedType,
+                else => @compileError("can't deserialize type " ++ @typeName(T)),
             };
         },
-        else => return error.UnsupportedType,
+        else => @compileError("can't deserialize type " ++ @typeName(T)),
     }
 }
 
