@@ -134,6 +134,12 @@ fn deserializeValue(T: type, allocator: std.mem.Allocator, value: Parser.Value) 
                 else => error.TypeMismatch,
             };
         },
+        .@"enum" => {
+            return switch (value) {
+                .string => |s| std.meta.stringToEnum(T, s) orelse error.InvalidEnum,
+                else => error.TypeMismatch,
+            };
+        },
         .@"struct" => {
             return switch (value) {
                 .object => |o| deserializeObject(T, allocator, o),
@@ -187,6 +193,10 @@ test "serialize, deserialize" {
     const Bar = struct {
         foobar: f32,
         foobaz: bool,
+        fenum: enum {
+            foo,
+            bar,
+        },
     };
 
     const Foo = struct {
@@ -198,7 +208,8 @@ test "serialize, deserialize" {
         \\  {
         \\    "bar": {
         \\      "foobar": 42.27,
-        \\      "foobaz": false
+        \\      "foobaz": false,
+        \\      "fenum": "foo"
         \\    },
         \\    "baz": [
         \\      "foo",
@@ -211,7 +222,7 @@ test "serialize, deserialize" {
     var res = try deserialize(Foo, testing.allocator, input);
     defer res.deinit();
 
-    try testing.expectEqualDeep(res.value.bar, Bar{ .foobar = 42.27, .foobaz = false });
+    try testing.expectEqualDeep(res.value.bar, Bar{ .foobar = 42.27, .foobaz = false, .fenum = .foo });
     try testing.expectEqualStrings(res.value.baz[0], "foo");
     try testing.expectEqualStrings(res.value.baz[1], "bar");
     try testing.expectEqualStrings(res.value.baz[2], "baz");
@@ -220,6 +231,6 @@ test "serialize, deserialize" {
     defer testing.allocator.free(serialized);
 
     try testing.expectEqualStrings(serialized,
-        \\{"bar":{"foobar":42.27,"foobaz":false},"baz":["foo","bar","baz"]}
+        \\{"bar":{"foobar":42.27,"foobaz":false,"fenum":"foo"},"baz":["foo","bar","baz"]}
     );
 }

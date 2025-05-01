@@ -10,25 +10,16 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const unit_test_files = [_][]const u8{
-        "src/Lexer.zig",
-        "src/Parser.zig",
-        "src/json.zig",
-    };
+    const unit_test = b.addTest(.{
+        .root_source_file = b.path("src/tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const run_test = b.addRunArtifact(unit_test);
 
     const test_step = b.step("test", "Run unit tests");
-
-    for (unit_test_files) |test_file| {
-        const unit_test = b.addTest(.{
-            .root_source_file = b.path(test_file),
-            .target = target,
-            .optimize = optimize,
-        });
-
-        const run_test = b.addRunArtifact(unit_test);
-
-        test_step.dependOn(&run_test.step);
-    }
+    test_step.dependOn(&run_test.step);
 
     const root_test = b.addTest(.{
         .root_source_file = b.path("src/root.zig"),
