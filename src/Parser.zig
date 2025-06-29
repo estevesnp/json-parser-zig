@@ -119,9 +119,9 @@ fn parseValue(self: *Parser) Error!?Value {
     return switch (tok) {
         .string => |s| Value{ .string = try allocator.dupe(u8, s) },
         .number => |n| Value{ .number = n },
-        .true => Value{ .true = {} },
-        .false => Value{ .false = {} },
-        .null => Value{ .null = {} },
+        .true => .true,
+        .false => .false,
+        .null => .null,
         .l_brace => Value{ .object = try self.parseObject() },
         .l_brack => Value{ .array = try self.parseArray() },
         else => return Error.UnexpectedToken,

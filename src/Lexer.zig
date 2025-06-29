@@ -2,18 +2,18 @@ const std = @import("std");
 const Lexer = @This();
 
 pub const Token = union(enum) {
-    l_brace: void,
-    r_brace: void,
-    l_brack: void,
-    r_brack: void,
-    comma: void,
-    colon: void,
+    l_brace,
+    r_brace,
+    l_brack,
+    r_brack,
+    comma,
+    colon,
 
     string: []const u8,
     number: f64,
-    true: void,
-    false: void,
-    null: void,
+    true,
+    false,
+    null,
 };
 
 pub const Error = error{
@@ -71,12 +71,12 @@ pub fn nextToken(self: *Lexer) Error!?Token {
     defer self.readChar();
 
     return switch (self.ch) {
-        '{' => .{ .l_brace = {} },
-        '}' => .{ .r_brace = {} },
-        '[' => .{ .l_brack = {} },
-        ']' => .{ .r_brack = {} },
-        ',' => .{ .comma = {} },
-        ':' => .{ .colon = {} },
+        '{' => .l_brace,
+        '}' => .r_brace,
+        '[' => .l_brack,
+        ']' => .r_brack,
+        ',' => .comma,
+        ':' => .colon,
 
         '"' => .{ .string = try self.parseString() },
         '-', '0'...'9' => .{ .number = try self.parseNumber() },
@@ -168,17 +168,17 @@ fn parseNumber(self: *Lexer) NumberParseError!f64 {
 
 fn parseTrue(self: *Lexer) Error!Token {
     try self.parseKeyword("true");
-    return .{ .true = {} };
+    return .true;
 }
 
 fn parseFalse(self: *Lexer) Error!Token {
     try self.parseKeyword("false");
-    return .{ .false = {} };
+    return .false;
 }
 
 fn parseNull(self: *Lexer) Error!Token {
     try self.parseKeyword("null");
-    return .{ .null = {} };
+    return .null;
 }
 
 fn parseKeyword(self: *Lexer, word: []const u8) Error!void {
@@ -248,17 +248,17 @@ test "parseFloat" {
 
 test "parseTrue" {
     var l = Lexer.init("true");
-    try std.testing.expectEqual(Token{ .true = {} }, l.parseTrue());
+    try std.testing.expectEqual(.true, l.parseTrue());
 }
 
 test "parseFalse" {
     var l = Lexer.init("false");
-    try std.testing.expectEqual(Token{ .false = {} }, l.parseFalse());
+    try std.testing.expectEqual(.false, l.parseFalse());
 }
 
 test "parseNull" {
     var l = Lexer.init("null");
-    try std.testing.expectEqual(Token{ .null = {} }, l.parseNull());
+    try std.testing.expectEqual(.null, l.parseNull());
 }
 
 test "nextToken" {
@@ -268,41 +268,41 @@ test "nextToken" {
         \\  "bar": 42.5 
         \\}
     , &.{
-        .{ .l_brace = {} },
+        .l_brace,
         .{ .string = "foo" },
-        .{ .colon = {} },
-        .{ .true = {} },
-        .{ .comma = {} },
+        .colon,
+        .true,
+        .comma,
         .{ .string = "bar" },
-        .{ .colon = {} },
+        .colon,
         .{ .number = 42.5 },
-        .{ .r_brace = {} },
+        .r_brace,
     });
 
     try testToken(
         \\["hello",true,null,-42.24e-22,false,{"true":"false"}]
     , &.{
-        .{ .l_brack = {} },
+        .l_brack,
         .{ .string = "hello" },
-        .{ .comma = {} },
-        .{ .true = {} },
-        .{ .comma = {} },
-        .{ .null = {} },
-        .{ .comma = {} },
+        .comma,
+        .true,
+        .comma,
+        .null,
+        .comma,
         .{ .number = -42.24e-22 },
-        .{ .comma = {} },
-        .{ .false = {} },
-        .{ .comma = {} },
-        .{ .l_brace = {} },
+        .comma,
+        .false,
+        .comma,
+        .l_brace,
         .{ .string = "true" },
-        .{ .colon = {} },
+        .colon,
         .{ .string = "false" },
-        .{ .r_brace = {} },
-        .{ .r_brack = {} },
+        .r_brace,
+        .r_brack,
     });
 
-    try testToken("true", &.{.{ .true = {} }});
-    try testToken("true ", &.{.{ .true = {} }});
+    try testToken("true", &.{.true});
+    try testToken("true ", &.{.true});
     try testToken("22.4e22", &.{.{ .number = 22.4e22 }});
     try testToken("22.4e22 ", &.{.{ .number = 22.4e22 }});
     try testToken("\"foo\"", &.{.{ .string = "foo" }});
