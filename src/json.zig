@@ -7,10 +7,12 @@ const string_fmt = "\"{s}\"";
 pub fn Result(T: type) type {
     return struct {
         value: T,
-        arena: std.heap.ArenaAllocator,
+        arena: *std.heap.ArenaAllocator,
 
         pub fn deinit(self: *@This()) void {
+            const gpa = self.arena.child_allocator;
             self.arena.deinit();
+            gpa.destroy(self.arena);
         }
     };
 }
@@ -98,12 +100,13 @@ fn serializeTuple(writer: anytype, tuple: anytype) !void {
 }
 
 pub fn deserialize(T: type, allocator: std.mem.Allocator, input: []const u8) !Result(T) {
-    var parser = try Parser.init(allocator, input);
+    var parser: Parser = try .init(allocator, input);
     defer parser.deinit();
 
     const val = try parser.parse() orelse return error.NoInput;
 
-    var arena = std.heap.ArenaAllocator.init(allocator);
+    var arena = try allocator.create(std.heap.ArenaAllocator);
+    arena.* = std.heap.ArenaAllocator.init(allocator);
 
     const res = try deserializeValue(T, arena.allocator(), val);
     return .{
