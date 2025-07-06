@@ -27,9 +27,9 @@ pub const Value = union(enum) {
     array: Array,
     string: []const u8,
     number: f64,
-    true: void,
-    false: void,
-    null: void,
+    true,
+    false,
+    null,
 
     pub fn format(
         self: Value,
