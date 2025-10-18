@@ -11,9 +11,11 @@ pub fn build(b: *std.Build) void {
     });
 
     const unit_test = b.addTest(.{
-        .root_source_file = b.path("src/tests.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.addModule("tests", .{
+            .root_source_file = b.path("src/tests.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     const run_test = b.addRunArtifact(unit_test);
@@ -22,9 +24,11 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_test.step);
 
     const root_test = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.addModule("root", .{
+            .root_source_file = b.path("src/root.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     const run_root_test = b.addRunArtifact(root_test);
