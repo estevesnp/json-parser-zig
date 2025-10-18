@@ -117,13 +117,13 @@ fn parseValue(self: *Parser) Error!?Value {
     const allocator = self.arena.allocator();
 
     return switch (tok) {
-        .string => |s| Value{ .string = try allocator.dupe(u8, s) },
-        .number => |n| Value{ .number = n },
+        .string => |s| .{ .string = try allocator.dupe(u8, s) },
+        .number => |n| .{ .number = n },
         .true => .true,
         .false => .false,
         .null => .null,
-        .l_brace => Value{ .object = try self.parseObject() },
-        .l_brack => Value{ .array = try self.parseArray() },
+        .l_brace => .{ .object = try self.parseObject() },
+        .l_brack => .{ .array = try self.parseArray() },
         else => return Error.UnexpectedToken,
     };
 }

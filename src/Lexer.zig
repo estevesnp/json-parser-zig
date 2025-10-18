@@ -137,26 +137,17 @@ fn parseNumber(self: *Lexer) NumberParseError!f64 {
         switch (ch) {
             '0'...'9' => {},
             '.' => {
-                if (!in_fraction) {
-                    if (in_exponent) return NumberParseError.BadFraction;
-                    in_fraction = true;
-                } else {
-                    return NumberParseError.RepeatedFraction;
-                }
+                if (in_fraction) return NumberParseError.RepeatedFraction;
+                if (in_exponent) return NumberParseError.BadFraction;
+                in_fraction = true;
             },
             'e', 'E' => {
-                if (!in_exponent) {
-                    in_exponent = true;
-                } else {
-                    return NumberParseError.RepeatedExponent;
-                }
+                if (in_exponent) return NumberParseError.RepeatedExponent;
+                in_exponent = true;
             },
             '+', '-' => {
-                if (!signed_exponent) {
-                    signed_exponent = true;
-                } else {
-                    return NumberParseError.RepeatedExponentSign;
-                }
+                if (signed_exponent) return NumberParseError.RepeatedExponentSign;
+                signed_exponent = true;
             },
             else => break :blk,
         }
