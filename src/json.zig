@@ -18,13 +18,11 @@ pub fn Result(T: type) type {
 }
 
 pub fn serialize(allocator: std.mem.Allocator, value: anytype) ![]u8 {
-    var buf_list: std.ArrayListUnmanaged(u8) = .empty;
+    var allocating: std.Io.Writer.Allocating = .init(allocator);
 
-    const writer = buf_list.writer(allocator);
+    try serializeValue(&allocating.writer, value);
 
-    try serializeValue(writer, value);
-
-    return buf_list.toOwnedSlice(allocator);
+    return allocating.toOwnedSlice();
 }
 
 fn serializeValue(writer: anytype, value: anytype) !void {
